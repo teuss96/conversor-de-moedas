@@ -1,42 +1,47 @@
-import tkinter as tk
 import requests
+import sys
+import os
+from PySide6.QtWidgets import QApplication
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtCore import QFile, QIODevice
+app = QApplication(sys.argv)
+os.chdir("C:\\Users\\shilo\\Downloads\\arquivos.ui")
+resposta = requests.get('https://economia.awesomeapi.com.br/json/last/USD-BRL').json()
+compra = resposta ['USDBRL']['bid']
+compra_float = float(compra)
 
-def converter():
+def funcao_conversao():
+    valor_inicial = pag_conversor.lineEdit.text()
     try:
-        response = requests.get('https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,BTC-BRL')
-        if response.status_code == 200:
-            cotacoes = response.json()
-            cotacao_dolar = cotacoes['USDBRL']['bid']
-            
-            real = float(entry_real.get())
-            
-            conversao = real / float(cotacao_dolar)
-
-            label_resultado.config(text=f'{real} reais equivalem a {conversao:.2f} dólares americanos.')
-        else:
-            label_resultado.config(text="Erro ao obter cotação. Tente novamente.")
+        valor_inicial_int = float(valor_inicial)
+        valor_convertido = compra_float * valor_inicial_int
+        valor_conv_int = float(valor_convertido)
+        valor_round = round(valor_conv_int, 2)
+        pag_conversor.close()
+        pag02_conversor.show()
+        pag02_conversor.label.setText(f"O valor é de {valor_round} dólares americanos")
     except ValueError:
-        label_resultado.config(text="Por favor, insira um valor numérico válido.")
-    except Exception as e:
-        label_resultado.config(text=f"Erro: {str(e)}")
+         pag02_conversor.label.setText(f"ERRO: Por favor, insira um valor válido!")
 
+def back():
+    pag02_conversor.close()
+    pag_conversor.show()
 
+def carregar_ui(caminho_ui):
+    ui_file = QFile(caminho_ui)
+    if not ui_file.open(QIODevice.ReadOnly):
+        print(f"Cannot open {ui_file.fileName()}: {ui_file.errorString()}")
+        exit(-1)
+    
+    loader = QUiLoader()
+    pag_conversor = loader.load(ui_file)
+    return pag_conversor
 
-root = tk.Tk()
-root.title("Conversor de Moeda")
+pag_conversor = carregar_ui("conversor.ui")
+pag_conversor.botao.clicked.connect(funcao_conversao)
 
-root.geometry("400x300")
+pag02_conversor = carregar_ui("conversao_page2.ui")
+pag02_conversor.botao.clicked.connect(back)
 
-label_instrucoes = tk.Label(root, text="Digite o valor em reais:")
-label_instrucoes.pack(pady=10)
-
-entry_real = tk.Entry(root, width=20)
-entry_real.pack(pady=10)
-
-button_converter = tk.Button(root, text="Converter", command=converter)
-button_converter.pack(pady=10)
-
-label_resultado = tk.Label(root, text="", font=("Arial", 12))
-label_resultado.pack(pady=20)
-
-root.mainloop()
+pag_conversor.show()
+app.exec()
